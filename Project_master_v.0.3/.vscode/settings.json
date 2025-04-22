@@ -1,0 +1,22 @@
+{
+	"files.associations": {
+		"menu.h": "c",
+		"stdlib.h": "c",
+		"io.h": "c",
+		"delay.h": "c",
+		"joystick.h": "c",
+		"render_manager.h": "c",
+		"interrupt.h": "c",
+		"screen_popup.h": "c",
+		"oled.h": "c",
+		"bluetooth.h": "c",
+		"string.h": "c",
+		"uart.h": "c",
+		"abcbitmap.h": "c",
+		"render_manager.c": "cpp",
+		"button.h": "c",
+		"protocol_status.h": "c",
+		"menu.c": "cpp",
+		"screen_popup.c": "cpp"
+	}
+}
