@@ -5,12 +5,15 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <string.h>
+#include <stdio.h>
+
 #include "abcbitmap.h"
 #include "oled.c"
 
-#include <stdio.h>
 
-
+#define max(x, y) ((x) < (y) ? (y) : (x))
+#define min(x, y) ((x) > (y) ? (y) : (x))
+#define TAB_SIZE 16
 
 #define TWI_SPEED 500000
 #define OLED_ADDR 0x3C
@@ -238,7 +241,7 @@ uint8_t get_letter_bitmap(uint8_t letter, volatile uint8_t * buffer, uint8_t inv
 	switch (letter) {
 
 		case '\t':
-			nx = ((cursor_getX()  + 16) / 8);
+			nx = TAB_SIZE - (cursor_getX() % TAB_SIZE);
 			memset((uint8_t *) buffer, 0xFF * invert, nx);
 			return nx;
 			break;
@@ -336,7 +339,7 @@ void oled_draw_letter(uint8_t letter, uint8_t x, uint8_t y, uint8_t textsize, ui
 
 	//if (letter_special_char(letter,&x, &y) == 1) return; // if letter is special char, deal with it and return
 
-	uint8_t bitmap[10] = {
+	uint8_t bitmap[TAB_SIZE] = {
 		0b01111110,
 		0b01001010,
 		0b01100110,
@@ -516,6 +519,21 @@ void oled_clear_area(uint8_t x, uint8_t page_start, uint8_t width, uint8_t page_
 	}
 
 	
+}
+
+void oled_draw_loading(uint8_t x, uint8_t y, uint8_t state) {
+	
+
+
+	uint8_t bitmap[10] = {0};
+	memset(bitmap, 0xFF,10);
+
+	uint8_t mx = x + state * 15;
+
+	for (uint8_t i = 0; i < state; i++) {
+		oled_draw_bitmap(bitmap,x+i*15, y,10,1);
+		oled_draw_bitmap(bitmap,mx-i*15, y+1,10,1);
+	}
 }
 
 #endif

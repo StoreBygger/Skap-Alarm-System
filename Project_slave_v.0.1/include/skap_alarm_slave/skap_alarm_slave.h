@@ -183,6 +183,10 @@ void skap_check_message(uint8_t * message) {
 			send_alarm_status();
 			break;
 
+		case ASK_SKAP_IS_LOCKER:
+			skap_send_message(SEND_SKAP_IS_LOCKER,0);
+			break;
+
 		default:
 			break;
 
@@ -232,7 +236,7 @@ void init_int0() {
 
 ISR (INT0_vect) {
 	if (pressed(&PIND, 2, &intO_btn_state)) {
-		send_alarm_status();
+		debug_printf("Distance: %i", distance_sensor_measure());
 	}
 }
 

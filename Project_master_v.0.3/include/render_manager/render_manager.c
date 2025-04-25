@@ -1,8 +1,6 @@
 #ifndef RENDER_MANGAGER_C
 #define RENDER_MANAGER_C
 #include <avr/io.h>
-#include "menu/menu.c"
-#include "render_manager.h"
 
 /*
 Current program id -> what program is rendering
@@ -22,7 +20,7 @@ Current program id -> what program is rendering
 
 
 uint8_t current_running_program = 1;
-uint8_t eeprom_read_page = 0;
+
 
 
 

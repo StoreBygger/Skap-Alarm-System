@@ -17,6 +17,9 @@
 		"button.h": "c",
 		"protocol_status.h": "c",
 		"menu.c": "cpp",
-		"screen_popup.c": "cpp"
+		"screen_popup.c": "cpp",
+		"locker.h": "c",
+		"locker.c": "cpp",
+		"eeprom.h": "c"
 	}
 }

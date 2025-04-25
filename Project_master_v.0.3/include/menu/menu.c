@@ -4,7 +4,45 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <stdlib.h> 
-#include "menu.h"
+
+#define MAX_MENU_ITEMS 9 // maximum of pre-programmed menu items
+#define MAX_MENU_TEXT_SIZE 30 // max size of menu text
+#define MAX_MENUS 7 // max number of menus
+#define MAX_MENU_RENDER_ITEMS 6
+
+
+#define MAX_MENU_STATE 5
+
+
+typedef struct menu_item  {
+
+	// object id's
+	uint8_t type; // type of menu object - to display object correctly
+	uint8_t text_id;
+	uint8_t item_id; // the ID to identify this menu object - the next menu is defined by item_id
+	uint8_t parent_id; // the id of the menu leading to this object
+	uint8_t state; // extra data to go along with menu object
+
+	//next and previous struct
+	struct menu_item * next;
+	struct menu_item * previous;
+
+	// methods
+	void (*menu_item_render)(struct menu_item * self, uint8_t x, uint8_t y, uint8_t selected);
+	void (*menu_item_pressed)(struct menu_item * self);
+
+}menu_item;
+
+enum menu_item_types {
+	header_item,
+	plain_text_item,
+	menu_pointer_item,
+	locker_item,
+	function_item,
+	back_item,
+	locker_header_item
+};
+
 
 // text strings for menu item text
 const char menu_text_main_menu[MAX_MENU_ITEMS][MAX_MENU_TEXT_SIZE] PROGMEM = {
@@ -48,7 +86,8 @@ const char menu_text_debug[MAX_MENU_ITEMS][MAX_MENU_TEXT_SIZE] PROGMEM = {
 	"Connect",
 	"Disconnect",
 	"init",
-	"Print eeprom"
+	"Print eeprom",
+	"Debug locker"
 };
 // state arrays for menu items
 const uint8_t menu_state_main_menu[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
@@ -222,7 +261,7 @@ const uint8_t menu_state_debug[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
 		0, // 	text_id:	0
 		41, //	item_id:	33
 		6, // 	parent_id:	5
-		8  // 	state: 		4
+		9  // 	state: 		4
 	},
 	{ // menu debug -> check at
 		4, //	type:		5, func
@@ -265,6 +304,14 @@ const uint8_t menu_state_debug[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
 		48, // item id
 		6, // parent id
 		0 // state
+
+	},
+	{ // menu debug -> debug status
+		4,
+		8,
+		49,
+		6,
+		0
 
 	},
 	{ // menu debug-> back

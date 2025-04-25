@@ -5,6 +5,10 @@
 #define UART_TIMEOUT 16
 #define UART_DELAY 1
 
+#define SIZE_RECIEVE_BUFFER1 25
+
+extern uint8_t recieve_buffer[SIZE_RECIEVE_BUFFER1];
+extern uint8_t len_recieve_buffer;
 
 void usart_init(uint16_t UBRR) {
 
@@ -22,7 +26,7 @@ void usart_transmit_data(uint8_t data) {
 	UDR = data;
 }
 
-uint8_t usart_recieve_data(uint16_t timeout) {
+uint8_t usart_recieve_data(uint32_t timeout) {
 	uint16_t i = 0;
 	while (!(UCSRA & (1 << RXC))) { // wait for data to be recieved
 		i++;
@@ -41,7 +45,24 @@ void usart_recieve_string(volatile char* buffer, uint8_t buffer_size) {
 	uint8_t i = 0;
 
 	while (i < buffer_size - 1) {
-		buffer[i] = usart_recieve_data(UART_TIMEOUT);
+		buffer[i] = (char) usart_recieve_data(UART_TIMEOUT);
+
+		if (buffer[i] == '\r') {  // Ignore \r
+            continue;
+        }
+
+		if (buffer[i] == '\n') {
+			break;
+		}
+		i++;
+	}
+	buffer[i] = '\0';
+}
+void usart_recieve_string_wait(volatile char* buffer, uint8_t buffer_size, uint32_t timeout) {
+	uint8_t i = 0;
+
+	while (i < buffer_size - 1) {
+		buffer[i] = usart_recieve_data(timeout);
 
 		if (buffer[i] == '\r') {  // Ignore \r
             continue;
@@ -69,9 +90,13 @@ void usart_send_array(uint8_t * array, uint8_t len) {
 }
 
 void set_rx_interrupt() {
+	memset(recieve_buffer, 0 , SIZE_RECIEVE_BUFFER1);
+	len_recieve_buffer = 0;
 	UCSRB |= (1<<RXCIE);
 }
 void clear_rx_interrupt() {
+	memset(recieve_buffer, 0 , SIZE_RECIEVE_BUFFER1);
+	len_recieve_buffer = 0;
 	UCSRB &= ~(1<<RXCIE);
 }
 

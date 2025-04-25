@@ -7,16 +7,13 @@
 #include <string.h>
 #include "abcbitmap.h"
 #include "oled.c"
+#include <div/twi.h>
 
 #include <stdio.h>
 
 
-
-#define TWI_SPEED 500000
 #define OLED_ADDR 0x3C
 
-#define TWI_TIMEOUT 16000
-#define TWI_DELAY 1
 
 #define MAX_CURSOR_X 128
 #define MAX_CURSOR_Y 8
@@ -30,13 +27,7 @@ uint8_t cursor_getX();
 uint8_t cursor_getY();
 void cursor_set(uint8_t x, uint8_t y);
 
-// I2C functions
-void TWI_Init(uint32_t speed);
-void TWI_start();
-void TWI_restart();
-void TWI_TData(uint8_t data);
-void TWI_RData(uint8_t ack);
-void TWI_stop();
+
 
 // make integers numbers
 void str_from_uint16_t(uint16_t num, volatile char * str);
@@ -98,58 +89,9 @@ uint8_t cursor_getY() {
 	return cursor[1];
 }
 
-void twi_wait() {
-	uint16_t i = 0;
-	while (!(TWCR & (1<<TWINT))) {
-		i++;
 
-		if (i>TWI_TIMEOUT) {
-			TWI_stop();
-			return;
-		}
-	}
-}
 
-void TWI_Init(uint32_t speed) {
-	PORTC |= (1<<PC0) | (1<<PC1); // set Pull up on I2C lines
 
-	uint32_t Br = ( (F_CPU / speed) - 16) / 2; // calculate TWI frequency
-	TWBR = Br; // set TWI frequency
-
-}
-
-void TWI_start() {
-	TWCR = (1<<TWSTA) | (1<<TWINT) | (1<<TWEN); // send START message
-	twi_wait(); // wait for message to be sent
-}
-
-void TWI_restart() { // switch slave to not addressed mode
-	TWCR = (1<<TWSTA) | (1<<TWINT) | (1<<TWEN); // send START message
-	twi_wait();// wait foTWINTr message to be sent
-}
-
-void TWI_stop() {
-	TWCR = (1<<TWSTO) | (1<<TWINT) | (1<<TWEN); // send STOP message
-}
-
-void TWI_SLA(uint8_t addr, uint8_t read) {
-	TWDR = (addr<<1) | (read<<0); // load SLA_W/R
-	TWCR = (1<<TWINT) | (1<<TWEN); // send message
-	twi_wait();// wait for message to be sent
-}
-
-void TWI_TData(uint8_t data) {
-	TWDR = data;
-	TWCR = (1<<TWINT) | (1<<TWEN); // send message
-	twi_wait(); // wait for message to be sent
-
-}
-
-void TWI_RData(uint8_t ack) {
-	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<ack); // send message
-	twi_wait(); // wait for message to be sent
-
-}
 void oled_data(uint8_t data) {
 	TWI_start();
 	TWI_SLA(OLED_ADDR,0);

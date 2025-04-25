@@ -5,21 +5,13 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <string.h>
+#include <stdlib.h>
 #include "uart.h"
 #include "locker/protocol_status.h"
+#include "bluetooth.c"
+#include "oled/oled.h"
 
-#define MAX_LEN_ANSWER 25
-#define BAUD_UBRR 51
 
-
-#define BTPORT PORTB
-#define BTDDR DDRB
-#define BTPIN PB0
-
-#define SIZE_RECIEVE_BUFFER 20
-
-#define BLUETOOTH_CONNECTED_UNIDENTIFIED 255
-#define BLUETOOTH_DISCONNECTED 0
 
 
 extern void popup_add_text(const char * text, uint8_t index);
@@ -46,9 +38,6 @@ extern uint8_t findString(const char string[], const char substring[]);
 void send_AT_command(const char* command);
 void bluetooth_init();
 void bluetooth_device_init();
-void initTimer2();
-void timer2_stop();
-void timer2_start();
 void bluetooth_check_AT();
 void bluetooth_check_ADDR();
 uint8_t check_AT_command(const char* command, char * expected_answer, char * recieved_answer);
@@ -77,6 +66,7 @@ uint8_t check_AT_command(const char* command, char * expected_answer, char * rec
 	send_AT_command(command);
 	usart_recieve_string(recieved_answer, MAX_LEN_ANSWER);
 	set_rx_interrupt();
+	
 
 	return (string_compare(expected_answer, recieved_answer, MAX_LEN_ANSWER));
 
@@ -87,24 +77,10 @@ void bluetooth_init() {
 	BTDDR |= (1<<BTPIN);
 	BTPORT |= (1<<BTPIN);
 	usart_init(BAUD_UBRR);
-	initTimer2();
 	set_rx_interrupt(); // enable RX complete interrupt
 
 }
-void initTimer2() { // set timer2 in normal mode, and trigger interupt on overflow vector
-	TIMSK |= (1<<TOIE2); // timer 2 overflow innterupt 
-	sei();
-}
 
-void timer2_start() {
-	TCNT2 = 0;
-	TCCR2 |= (1<<CS22) | (1<<CS21) | (1<<CS20); // enable prescalers
-}
-
-void timer2_stop() {
-	TCCR2 &= ~((1<<CS22) | (1<<CS21) | (1<<CS20)); // disable prescalers
-	TCNT2 = 0;
-}
 
 void bluetooth_device_init() {
 
@@ -167,6 +143,14 @@ void bluetooth_device_init() {
 	err = check_AT_command("AT+IMME1","OK+Set:1", recieved_answer);
 	if (err != 0) {
 		bluetooth_err("BT role", recieved_answer);
+	}
+	memset(recieved_answer, 0,MAX_LEN_ANSWER);
+
+	// set set BT show -> show name after OK+DISC ADDR recieved
+	err = 0;
+	err = check_AT_command("AT+SHOW1","OK+Set:1", recieved_answer);
+	if (err != 0) {
+		bluetooth_err("BT show", recieved_answer);
 	}
 	memset(recieved_answer, 0,MAX_LEN_ANSWER);
 	
@@ -279,6 +263,7 @@ void bluetooth_rec() {
 	popup_make_string_array(3);
 	popup_add_text("BT RECIEVED", 0);
 	popup_add_text(line, 1);
+	recieve_buffer[SIZE_RECIEVE_BUFFER- 1] = '\0';
 	popup_add_text((char *) recieve_buffer, 2);
 	current_running_program = 2;
 
@@ -288,32 +273,22 @@ void bluetooth_rec() {
 void bluetooth_disconnect() {
 	BTPORT &= ~(1<<BTPIN);
 	_delay_ms(500);
+	BTPORT |= (1<<BTPIN);
 	bluetooth_state = BLUETOOTH_DISCONNECTED; // reset BT state to disconnected, OK+LOST does not get sent when BT is powered off
 	
-	
-	BTPORT |= (1<<BTPIN);
 }
 
 ISR (USART_RXC_vect) {
 	uint8_t data = UDR; // read data
-	recieve_buffer[len_recieve_buffer] = data; // put data in recieve buffer
+	recieve_buffer[len_recieve_buffer++] = data; // put data in recieve buffer
 	
-	len_recieve_buffer++; // incremeant recieve buffer
 
-	if (len_recieve_buffer > SIZE_RECIEVE_BUFFER) { // if recieve_buffer is full, reset recieve buffer
+	if (len_recieve_buffer > SIZE_RECIEVE_BUFFER - 1) { // if recieve_buffer is full, reset recieve buffer
 		clear_recieve();
-		timer2_stop();
 		return;
 		
 	}
 
-	timer2_start(); // start countdown timer
-} 
-
-ISR (TIMER2_OVF_vect) {
-	timer2_stop(); // stop countdown timer
-	
-	bluetooth_rec();
 	uint8_t noti = 0;
 	noti = bluetooth_check_notify();
 
@@ -321,17 +296,15 @@ ISR (TIMER2_OVF_vect) {
 		bluetooth_rec_finished();
 	}
 
-	
-
-	
-	
-}
+} 
 
 
 void clear_recieve() {
+	bluetooth_rec();
 	memset(recieve_buffer, 0, SIZE_RECIEVE_BUFFER);
 	len_recieve_buffer = 0;
 	oled_draw_text((volatile char * ) "Cleared buffer", 65, 7, 1, 1);
+	
 }
 
 void bluetooth_rec_finished() {
@@ -341,7 +314,8 @@ void bluetooth_rec_finished() {
 
 	if (err == 0) {
 		clear_recieve();
-	}
+	} 
+
 	
 
 
@@ -351,32 +325,56 @@ void bluetooth_rec_finished() {
 }
 
 uint8_t bluetooth_check_notify() {
-	if (findString((char *) recieve_buffer, "OK+CONN") == 1) { // device have been connected -> dont set
+	
+
+	if (findString((char * ) recieve_buffer, "OK+LOST") != 255) { // BT connection lost
+		bluetooth_state = BLUETOOTH_DISCONNECTED; // set BT state to 0 / disconnected
+
+		clear_recieve();
+		update_next_check_locker();
+		return 1;
+	}
+
+	if (findString((char * ) recieve_buffer, "OK+CONNF") != 255) { // BT connection Failure
+
+		oled_draw_text((volatile char *) "OK+CONNF", 64,6,1,1);
+		_delay_ms(500);
+		bluetooth_state = BLUETOOTH_DISCONNECTED; // set BT state to 0 / disconnected
+		clear_recieve();
+		update_next_check_locker();
+		return 1;
+	}
+
+	if (findString((char * ) recieve_buffer, "OK+CONNE") != 255) { // BT connection error
+		
+		oled_draw_text((volatile char *) "OK+CONNE", 64,6,1,1);
+		_delay_ms(500);
+		bluetooth_state = BLUETOOTH_DISCONNECTED; // set BT state to 0 / disconnected
+		clear_recieve();
+		update_next_check_locker();
+		return 1;
+	}
+
+	if (findString((char * ) recieve_buffer, "OK+CONNA") != 255) { // BT connection accepting conn. requests
+		
+		oled_draw_text((volatile char *) "OK+CONNA", 64,6,1,1);
+		_delay_ms(500);
+		clear_recieve();
+		return 1;
+	}
+
+	if (findString((char *) recieve_buffer, "OK+CONN\r\n") != 255) { // BT connection mad
+		oled_draw_text((volatile char *) "OK+CONN", 64,6,1,1);
+		_delay_ms(500);
 
 		if (bluetooth_state == BLUETOOTH_DISCONNECTED) bluetooth_state = BLUETOOTH_CONNECTED_UNIDENTIFIED; // only set bluetooth state if it is previously
 		clear_recieve();
 		
 		return 1;
-	}
+	} 
 
-	if (findString((char * ) recieve_buffer, "OK+LOST") == 1) { // device have 
-		bluetooth_state = BLUETOOTH_DISCONNECTED; // set BT state to 0 / disconnected
-		clear_recieve();
-		update_next_check_locker();
-		return 1;
-	}
 
-	if (findString((char * ) recieve_buffer, "OK+CONNF") == 1) {
-		bluetooth_state = BLUETOOTH_DISCONNECTED; // set BT state to 0 / disconnected
-		clear_recieve();
-		update_next_check_locker();
-		return 1;
-	}
-
-	if (findString((char * ) recieve_buffer, "OK+CONNA") == 1) {
-		clear_recieve();
-		return 1;
-	}
+	oled_draw_text((volatile char *) "No Noti", 64,6,1,1);
 
 	return 0;
 }

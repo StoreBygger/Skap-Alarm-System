@@ -3,6 +3,8 @@
 		"oled_debug.h": "c",
 		"interrupt.h": "c",
 		"distance_sensor.h": "c",
-		"skap_alarm_slave.h": "c"
+		"skap_alarm_slave.h": "c",
+		"uart.h": "c",
+		"twi.h": "c"
 	}
 }

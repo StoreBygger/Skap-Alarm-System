@@ -1,57 +1,28 @@
 #ifndef MENU_H
 #define MENU_H
+
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <string.h>
 #include <stdlib.h> 
+
 #include "oled/oled.c"
 #include "joystick/joystick.c"
-#include "Bluetooth/bluetooth.c"
+#include "Bluetooth/bluetooth.h"
 #include "locker/locker.h"
-
-#define MAX_MENU_ITEMS 8 // maximum of pre-programmed menu items
-#define MAX_MENU_TEXT_SIZE 30 // max size of menu text
-#define MAX_MENUS 7 // max number of menus
-#define MAX_MENU_RENDER_ITEMS 6
+#include "menu.c"
 
 
-#define MAX_MENU_STATE 5
 
-typedef struct menu_item  {
 
-	// object id's
-	uint8_t type; // type of menu object - to display object correctly
-	uint8_t text_id;
-	uint8_t item_id; // the ID to identify this menu object - the next menu is defined by item_id
-	uint8_t parent_id; // the id of the menu leading to this object
-	uint8_t state; // extra data to go along with menu object
-
-	//next and previous struct
-	struct menu_item * next;
-	struct menu_item * previous;
-
-	// methods
-	void (*menu_item_render)(struct menu_item * self, uint8_t x, uint8_t y, uint8_t selected);
-	void (*menu_item_pressed)(struct menu_item * self);
-
-}menu_item;
-
-enum menu_item_types {
-	header_item,
-	plain_text_item,
-	menu_pointer_item,
-	locker_item,
-	function_item,
-	back_item,
-	locker_header_item
-};
 
 extern menu_item * current_menu_header;
 extern menu_item * current_selected_item;
 
 extern uint8_t current_menu_id;
 extern uint8_t current_menu_render_y;
+
 
 // cursor positions
 extern uint8_t current_cursor_x;
@@ -83,6 +54,8 @@ extern const uint8_t menu_state_locker[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM;
 
 extern const uint8_t menu_state_all_headers[MAX_MENUS][MAX_MENU_STATE];
 
+
+
 extern uint8_t current_running_program; // defines the current running program
 
 
@@ -95,6 +68,8 @@ extern char * current_popup_start;
 extern uint8_t current_popup_lines;
 
 extern void locker_reset_all_alarms();
+
+extern void eeprom_print_start();
 
 
 
@@ -129,7 +104,8 @@ void menu_locker_get_addr(menu_item * self);
 void menu_locker_check_alarm(menu_item * self);
 
 void menu_init();
-
+void menu_start();
+void menu_stop();
 
 // cursor functions
 extern void update_cursor(int8_t x, int8_t y, uint8_t btn);
@@ -459,7 +435,6 @@ void menu_header_render(menu_item * self, uint8_t x, uint8_t y, uint8_t selected
 	char text[MAX_MENU_TEXT_SIZE];
 	menu_load_menu_text(text, self->parent_id, self->text_id);
 	oled_draw_text(text,x,y,2,selected);
-	oled_draw_num(self->state,cursor[0]+6,y,2,0);
 	current_menu_render_y += 2; // add current_menu_render_y by 2 -> by textsize
 }
 
@@ -541,6 +516,10 @@ void menu_func_pressed(menu_item * self) {
 			locker_check_all_alarms();
 			break;
 
+		case 19: // connect new device
+			LCN_init();
+			break;
+
 		case 20: // delete all devices
 			locker_delete_all();
 			break;
@@ -566,8 +545,13 @@ void menu_func_pressed(menu_item * self) {
 			break;
 
 		case 48:
-			current_running_program = 3;
-			render();
+			menu_stop();
+			eeprom_print_start();
+			break;
+
+
+		case 49:
+			locker_debug_status();
 			break;
 
 		case 130: // locker reset alarm
@@ -674,6 +658,20 @@ void menu_locker_check_alarm(menu_item * self) {
 	locker_check_alarm(locker_id);
 
 
+}
+
+void menu_start() {
+	joystick_adc_start();
+	current_running_program = pgm_menu;
+	menu_make_menu(current_menu_header, 1);
+	render();
+}
+
+void menu_stop() {
+	joystick_adc_stop();
+	current_running_program = pgm_none;
+	menu_free_menu(current_menu_header);
+	render();
 }
 
 

@@ -30,6 +30,7 @@ void popup_delete_string_array();
 void popup_make_string_array(uint8_t len);
 void popup_render();
 void init_popup(uint8_t popup_lines);
+void popup_stop();
 
 void init_popup(uint8_t popup_lines) {
 	max_cursor_x = 0;
@@ -62,7 +63,7 @@ void popup_add_text(const char * text, uint8_t index) {
 
 void popup_make_string_array( uint8_t len) {
 	if (current_popup_running == 1) {
-		_delay_ms(2000);
+		//_delay_ms(5000);
 		popup_delete_string_array();
 	}
 	current_popup_running = 1; 
@@ -108,6 +109,12 @@ void popup_render() {
 
 }
 
+void popup_stop() {
+	current_running_program = pgm_none;
+	popup_delete_string_array();
+	oled_cmd(0xA6); // non - inverted mode
+	render();
+}
 
 
 

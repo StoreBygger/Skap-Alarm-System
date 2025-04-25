@@ -2,24 +2,47 @@
 #define DISTANCE_SENSOR_H
 #include <avr/io.h>
 #include "oled_debug/oled_debug.h"
+#include "div/twi.h"
+
+#define DISTANCE_SENSOR_ADDR 0x57
 
 
 void distance_sensort_init() {
+
+	TWI_Init(TWI_SPEED);
 
 
 }
 
 
-uint8_t distance_sensor_measure() {
+int32_t distance_sensor_measure() {
 	
-	static uint8_t measured = 0;
+	uint8_t response[3];
+	_delay_ms(20);
+
+	TWI_start();
+	TWI_SLA(DISTANCE_SENSOR_ADDR, 0);
+	TWI_TData(0x01);
+	TWI_stop();
+
+	_delay_ms(200);
+
+	TWI_start();
+	TWI_SLA(DISTANCE_SENSOR_ADDR, 1);
+	response[0] = TWI_RData(1);
+	response[1] = TWI_RData(1);
+	response[2] = TWI_RData(0);
+	TWI_stop();
+	if (response[0] == 0 && response[1] == 0 && response[2] == 0) {
+		debug_print("Warning: Got empty response");
+	}
+
+	uint32_t measured = ((uint32_t)response[0] << 16) | ((uint32_t)response[1] << 8) | ((uint32_t)response[2] << 0);
+
+	int distance = measured / 1000000.0 * 100.0;
 
 
-	uint8_t distance = measured;
-
-	measured++;
-
-	debug_printf("Measured distance:\t%i", distance);
+	_delay_ms(20);
 
 	return distance;
 
