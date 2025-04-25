@@ -10,7 +10,7 @@
 #include "locker.c"
 #include "div/eeprom.h"
 #include "protocol_status.h"
-
+#include "oled/oled.h"
 
 
 
@@ -775,8 +775,13 @@ ISR (TIMER2_COMP_vect) {
 
 	if (state < 128) {
 		PORTD ^= (1<<PD7);
+		
+		OCR2 += 1;
+		if (OCR2 >= 15) OCR2 = 1;
+
 	} else {
 		PORTD &= ~(1<<PD7);
+		OCR2 = 10;
 	}
 
 }

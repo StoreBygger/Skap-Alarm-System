@@ -5,6 +5,7 @@
 		"distance_sensor.h": "c",
 		"skap_alarm_slave.h": "c",
 		"uart.h": "c",
-		"twi.h": "c"
+		"twi.h": "c",
+		"locker.c": "cpp"
 	}
 }
