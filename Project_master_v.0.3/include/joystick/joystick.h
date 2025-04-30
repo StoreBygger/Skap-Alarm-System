@@ -126,6 +126,7 @@ void check_axis(int16_t VqSet, volatile uint8_t * ASet) {
 }
 
 void joystick_adc_start() {
+	initADC();
 	ADCSRA |= (1<<ADEN); // enable ADC
 	TCCR0 |= (1<<CS02) | (1<<CS00); // 1024 prescaler
 }

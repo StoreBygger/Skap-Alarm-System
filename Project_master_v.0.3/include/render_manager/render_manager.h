@@ -74,6 +74,10 @@ void joy_btn_pressed() {
 			LCN_pressed();
 			break;
 
+		case pgm_sleep:
+			sleep_stop();
+			return;
+
 		default:
 			break;
 

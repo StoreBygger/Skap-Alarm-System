@@ -228,24 +228,13 @@ void bluetooth_connect_addr(char  addr[13]) {
 
 	uint8_t err = check_AT_command(send_cmd, exp_cmd, rec_cmd);
 
-	if (err != 0) {
-		max_cursor_x = 0;
-		max_cursor_y = 0;
-		popup_make_string_array(5);
-		popup_add_text("BT CONNECT", 0);
-		popup_add_text("ADDR", 1);
-		popup_add_text(addr,2);
-		popup_add_text("Recieved:",3);
-		popup_add_text(rec_cmd,4);
-		current_running_program = 2;
-	
-		popup_render();
-	}
-	
 
 }
 
 void bluetooth_rec() {
+
+	return; 
+
 	max_cursor_x = 0;
 	max_cursor_y = 0;
 	char line[50];
@@ -280,6 +269,8 @@ void bluetooth_disconnect() {
 
 ISR (USART_RXC_vect) {
 	uint8_t data = UDR; // read data
+
+
 	recieve_buffer[len_recieve_buffer++] = data; // put data in recieve buffer
 	
 

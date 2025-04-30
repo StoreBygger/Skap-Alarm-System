@@ -13,11 +13,7 @@ int main(void) {
 	locker_init();
 
 
-	initTimer2();
-	timer2_start();
 
-	initTimer1();
-	timer1_start(65500UL);
 
 	
 	while (1) {

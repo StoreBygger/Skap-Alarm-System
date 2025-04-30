@@ -50,8 +50,7 @@ const char menu_text_main_menu[MAX_MENU_ITEMS][MAX_MENU_TEXT_SIZE] PROGMEM = {
 	"Alarms",
 	"Connected Devices",
 	"Options",
-	"Credits",
-	"Debug"
+	"Credits"
 
 };
 const char menu_text_alarms[MAX_MENU_ITEMS][MAX_MENU_TEXT_SIZE] PROGMEM = {
@@ -69,7 +68,7 @@ const char menu_text_connections[MAX_MENU_ITEMS][MAX_MENU_TEXT_SIZE] PROGMEM = {
 const char menu_text_options[MAX_MENU_ITEMS][MAX_MENU_TEXT_SIZE] PROGMEM = {
 	"Options",
 	"Back",
-	"Turn off alarms",
+	"Debug",
 	"Power off"
 };
 const char menu_text_credits[MAX_MENU_ITEMS][MAX_MENU_TEXT_SIZE] PROGMEM = {
@@ -96,7 +95,7 @@ const uint8_t menu_state_main_menu[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
 		0, // 	text_id:	0
 		1, // 	item_id:	1
 		1, // 	parent_id:	1
-		6 // 	state:		5
+		5  // 	state:		5
 	},
 	{ // main menu -> alarms
 		2, // 	type: 		2, new menu
@@ -126,13 +125,6 @@ const uint8_t menu_state_main_menu[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
 		5, //	item_id:	5
 		1, // 	parent_id:	1
 		5  //	state:		5
-	},
-	{ // menu debug -debug
-		2, //	type:		2, new menu
-		5, // 	text_id:	5
-		6, //	item_id:	6
-		1, // 	parent_id:	1
-		6  // 	state: 		6
 	}
 };
 const uint8_t menu_state_alarms[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
@@ -203,12 +195,12 @@ const uint8_t menu_state_options[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
 		4, // 	parent_id:	4
 		4  // 	state: 		4
 	},
-	{ // menu options -> turn off alarms
-		4, //	type:		4, func
+	{ // menu options -> debug
+		2, //	type:		2, menu_ptr
 		2, // 	text_id:	2
 		27, //	item_id:	27
 		4, // 	parent_id:	4
-		0  // 	state: 		0
+		6  // 	state: 		0
 	},
 	{ // menu options -> power off
 		4, //	type:		4, func
@@ -261,7 +253,7 @@ const uint8_t menu_state_debug[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
 		0, // 	text_id:	0
 		41, //	item_id:	33
 		6, // 	parent_id:	5
-		9  // 	state: 		4
+		8  // 	state: 		8
 	},
 	{ // menu debug -> check at
 		4, //	type:		5, func
@@ -277,31 +269,24 @@ const uint8_t menu_state_debug[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
 		6, // 	parent_id:	5
 		0  // 	state: 		0
 	},
-	{ // menu debug -> connect
-		4, //	type:		5, func
-		4, // 	text_id:	1
-		45, //	item_id:	34
-		6, // 	parent_id:	5
-		0  // 	state: 		0
-	},
 	{ // menu debug -> disconnect
 		4, //	type:		5, func
 		5, // 	text_id:	1
-		46, //	item_id:	34
+		45, //	item_id:	34
 		6, // 	parent_id:	5
 		0  // 	state: 		0
 	},
 	{ // menu debug -> init
 		4, //	type:		5, func
 		6, // 	text_id:	1
-		47, //	item_id:	34
+		46, //	item_id:	34
 		6, // 	parent_id:	5
 		0  // 	state: 		0
 	},
 	{ // menu debug -> read eeprom
 		4, // type func
 		7, // text id
-		48, // item id
+		47, // item id
 		6, // parent id
 		0 // state
 
@@ -309,7 +294,7 @@ const uint8_t menu_state_debug[MAX_MENU_ITEMS][MAX_MENU_STATE] PROGMEM = {
 	{ // menu debug -> debug status
 		4,
 		8,
-		49,
+		48,
 		6,
 		0
 

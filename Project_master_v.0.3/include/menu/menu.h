@@ -524,6 +524,10 @@ void menu_func_pressed(menu_item * self) {
 			locker_delete_all();
 			break;
 
+		case 28:
+			sleep_start();
+			break;
+
 		case 43:
 			bluetooth_check_AT();
 			break;
@@ -533,24 +537,20 @@ void menu_func_pressed(menu_item * self) {
 			break;
 
 		case 45:
-			bluetooth_connect_addr("6C79B8BB36C5");
-			break;
-
-		case 46:
 			bluetooth_disconnect();
 			break;
 		
-		case 47:
+		case 46:
 			bluetooth_device_init();
 			break;
 
-		case 48:
+		case 47:
 			menu_stop();
 			eeprom_print_start();
 			break;
 
 
-		case 49:
+		case 48:
 			locker_debug_status();
 			break;
 

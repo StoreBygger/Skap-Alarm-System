@@ -32,7 +32,8 @@ typedef enum current_running_prog {
 	pgm_menu,
 	pgm_popup,
 	pgm_eeprom_print,
-	pgm_LCN
+	pgm_LCN,
+	pgm_sleep
 } current_running_prog;
 
 typedef struct LCN_locker {
@@ -47,6 +48,8 @@ uint8_t current_check_locker_id = 255;
 
 LCN_locker LCN_locker_list[MAX_DISC];
 uint8_t LCN_last_id = 0;
+
+uint8_t alarm_sound = 1;
 
 
 

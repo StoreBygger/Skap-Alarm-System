@@ -34,6 +34,7 @@ void locker_update_alarm(uint8_t locker_id, uint8_t alarm_status);
 void locker_reset_all_alarms();
 
 uint8_t findString(const char string[], const char substring[]);
+uint8_t locker_check_alarm_active();
 
 extern void popup_add_text(const char * text, uint8_t index);
 extern void popup_delete_string_array();
@@ -43,6 +44,10 @@ extern void init_popup(uint8_t popup_lines);
 extern void menu_stop();
 extern void menu_start();
 extern void menu_init();
+
+
+extern void popup_stop();
+extern void eeprom_print_stop();
 
 extern void render();
 
@@ -77,13 +82,23 @@ void LCN_stop();
 void initTimer2();
 void timer2_stop();
 void timer2_start();
+void alarm_clear();
+void alarm_set();
+void timer1_stop();
+void timer1_start(uint16_t count);
+void timer1_al_start();
+void initTimer1();
 
+void sleep_set();
+void sleep_clear();
 
 void locker_init() {
 	oled_init();
 	joystick_init();
 	menu_init();
 	bluetooth_init();
+	initTimer1();
+	initTimer2();
 
 	if (eepromRead(0) == 0xFF) { // all eeprom is FF when ATmega32 loaded -> check if ATmega is not beeing manually reset
 		locker_delete_all(); // delete all lockers
@@ -195,16 +210,14 @@ void locker_update_alarm(uint8_t locker_id, uint8_t alarm_status) {
 
 	eepromWrite(locker_eeprom_id + 1, alarm_status);
 
+	alarm_status = locker_check_alarm_active();
 
-	char text1[25];
-	char text2[25];
-	sprintf(text1, "Locker %i status", locker_id);
-	sprintf(text2, "Status: %02X", alarm_status);
+	if (alarm_status == SKAP_ALARM_ALARM) {
+		alarm_set();
+	} else if (alarm_status == SKAP_ALARM_INGEN) {
 	
-	init_popup(3);
-	popup_add_text(text1, 0);
-	popup_add_text(text2, 2);
-	render();
+		alarm_clear();
+	}
 
 }
 
@@ -365,6 +378,23 @@ void locker_check_message(uint8_t * message) {
 }
 
 
+uint8_t locker_check_alarm_active() {
+
+	for (uint8_t i = 0; i < MAX_LOCKERS; i++) {
+		uint16_t eeprom_id = LOCKER_EEPROM_BASE + (LOCKER_SIZE * i);
+		uint8_t active = eepromRead(eeprom_id);
+		
+		if (active != 1) continue;
+
+		uint8_t alarm = eepromRead(eeprom_id + 1);
+
+		if (alarm == SKAP_ALARM_ALARM) return SKAP_ALARM_ALARM;
+
+	}
+
+	return SKAP_ALARM_INGEN;
+}
+
 void locker_check_alarm(uint8_t locker_id) {
 
 	if (locker_id  >= 64) {
@@ -410,21 +440,17 @@ void locker_reset_all_alarms() {
 
 void update_next_check_locker() {
 
-	char text[30];
-	sprintf(text, "ID:%i", current_check_locker_id);
-
-	init_popup(3);
-	popup_add_text("Checking locker", 0);
-	popup_add_text(text, 1); 
-	render();
-	_delay_ms(500);
-
-	if (current_check_locker_id == 255) return; // if no next locker, return
+	
+	if (current_check_locker_id == 255) {
+		timer1_al_start();
+		return;
+	} // if no next locker, return
 
 	
 
 	if (current_check_locker_id >= MAX_LOCKERS) { // if id exceeds max lockers -> all lockers gone through
 		current_check_locker_id = 255;
+		timer1_al_start();
 		return;
 	}
 
@@ -440,15 +466,11 @@ void update_next_check_locker() {
 
 		if (current_check_locker_id >= MAX_LOCKERS) { // if id exceeds max lockers -> all lockers gone through
 			current_check_locker_id = 255;
+			timer1_al_start();
 			return;
 		}
 		
 	}
-	init_popup(2);
-	sprintf(text, "CONNECTING:%i", current_check_locker_id);
-	popup_add_text("Check Locker", 0);
-	popup_add_text(text, 1);
-	render();
 
 	locker_check_alarm(current_check_locker_id);
 	current_check_locker_id++; // up current locker to next locker id
@@ -515,8 +537,6 @@ void LCN_init() {
 
 	current_cursor_x = 1;
 	current_cursor_y = 1;
-
-	joystick_adc_start();
 	clear_rx_interrupt();
 
 	LCN_delete_list(LCN_locker_list, MAX_DISC); // delete previous list
@@ -525,7 +545,7 @@ void LCN_init() {
 	oled_clear();
 	char recieved[LCN_LEN_RECIEVE];
 	uint8_t err = check_AT_command("AT+DISC?", "OK+DISCS", recieved);
-
+	clear_rx_interrupt();
 	if (err != 0) {
 		LCN_stop();
 	}
@@ -752,7 +772,7 @@ void initTimer2() { // set timer2 in normal mode, and trigger interupt on overfl
 		Because with 8MHz -> OCn frequency with OCR2 = 254 -> frequency = 30Hz -> too low for the ear to hear
 	*/
 	OCR2 = 10;
-	DDRD |= (1<<PD7); // PD7 / OC2 output
+	DDRD |= (1<<PD7) | (1<<PD6); // PD7 / OC2 output
 	TCCR2 |= (1<<WGM21); // ctc mode
 	//TCCR2 |= (1<<COM20);
 
@@ -769,28 +789,37 @@ void timer2_stop() {
 }
 
 ISR (TIMER2_COMP_vect) {
+	sleep_clear();
 	static uint8_t state = 0;
 
 	state++;
 
 	if (state < 128) {
 		PORTD ^= (1<<PD7);
+
+		if (alarm_sound >= 1) {
+			PORTD ^= (1<<PD6);
+		} else {
+			PORTD &= ~(1<<PD6);
+		}
 		
 		OCR2 += 1;
 		if (OCR2 >= 15) OCR2 = 1;
 
 	} else {
-		PORTD &= ~(1<<PD7);
+		PORTD &= ~((1<<PD7) | (1<<PD6));
 		OCR2 = 10;
 	}
-
+	sleep_set();
 }
 
 void initTimer1() {
 
 	DDRD |= (1<<PD5); //OC1A output
-	TCCR1A |= (1<<COM1A1); // toggle OC1A on compare match
+	//TCCR1A |= (1<<COM1A0); // toggle OC1A on compare match
 	TCCR1B |= (1<<WGM12); // ctc mode
+	TIMSK |= (1<<OCIE1A);
+	sei();
 	
 }
 
@@ -799,8 +828,87 @@ void timer1_start(uint16_t count) {
 	TCCR1B |= (1<<CS12) | (1<<CS10); // 1024 prescaler
 }
 
+void timer1_al_start() {
+	if (current_running_program != pgm_sleep) return; // timer1 is NOT supposed to turn on
+
+	timer1_start(65000);
+	sleep_set();
+
+}
 void timer1_stop() {
 	TCCR1B &= ~((1<<CS12) | (1<<CS10));
+}
+
+ISR (TIMER1_COMPA_vect) {
+	sleep_clear();
+	PORTD ^= (1<<PD5);
+
+	switch (current_running_program) {
+
+		case pgm_sleep:
+			timer1_stop();
+			locker_check_all_alarms();
+			break;
+
+		default:
+			break;
+	}
+}
+
+void alarm_set() {
+
+	if (current_running_program == pgm_sleep) {
+		alarm_sound = 1;
+	} else {
+		alarm_sound = 0;
+	}
+
+	timer2_start();
+}
+
+void alarm_clear() {
+	timer2_stop();
+}
+
+void sleep_start() {
+	oled_clear();
+	oled_draw_text("GOING TO SLEEP", 21,3,2,1);
+	menu_stop();
+	popup_stop();
+	LCN_stop();
+	eeprom_print_stop();
+	joystick_adc_stop();
+	current_running_program = pgm_sleep;
+	
+	initTimer1(); // make sure timers is correctly initialized
+	initTimer2();
+	timer1_al_start();
+	alarm_sound = 1;
+	// put sleep modes start
+	oled_clear();
+	sleep_set();
+
+}
+
+void sleep_stop() {
+	alarm_sound = 0;
+	timer1_stop();
+	sleep_clear();
+	menu_start();
+	render();
+}
+
+void sleep_clear() {
+	MCUCR &= ~(1<<SE);
+	MCUCR &= ~((1<<SM0) | (1<<SM1));
+}
+
+void sleep_set() {
+
+	if (current_running_program != pgm_sleep) return; // dont set sleep if not in sleep pgm
+
+	MCUCR |= (1<<SM0) | (1<<SM1);
+	MCUCR |= (1<<SE);
 }
 
 
