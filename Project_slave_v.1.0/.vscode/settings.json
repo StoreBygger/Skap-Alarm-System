@@ -1,0 +1,6 @@
+{
+	"files.associations": {
+		"skap_alarm_slave.h": "c",
+		"eeprom.h": "c"
+	}
+}
