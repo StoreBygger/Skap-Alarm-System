@@ -1,3 +1,5 @@
+// slave/skap_alarm_slave.h
+
 #ifndef SKAP_ALARM_SLAVE_H
 #define SKAP_ALARM_SLAVE_H
 #include <stdarg.h>

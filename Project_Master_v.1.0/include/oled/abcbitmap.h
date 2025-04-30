@@ -1,3 +1,5 @@
+// master/abcbitmap.h
+
 #ifndef abcbitmap
 #define abcbitmap
 

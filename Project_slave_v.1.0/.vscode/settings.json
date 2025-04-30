@@ -1,6 +1,7 @@
 {
 	"files.associations": {
 		"skap_alarm_slave.h": "c",
-		"eeprom.h": "c"
+		"eeprom.h": "c",
+		"io.h": "c"
 	}
 }

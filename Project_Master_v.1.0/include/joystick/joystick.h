@@ -1,5 +1,7 @@
-#ifndef joystick
-#define joystick
+// master/joystick.h
+
+#ifndef joystick_h
+#define joystick_h
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "div/button.h"

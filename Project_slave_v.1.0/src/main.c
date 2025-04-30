@@ -1,3 +1,5 @@
+// slave/main.c
+
 #include "skap_alarm_slave/skap_alarm_slave.h"
 
 int main(void) {

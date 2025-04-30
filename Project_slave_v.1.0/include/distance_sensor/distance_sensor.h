@@ -1,10 +1,12 @@
+// slave/distance_sensor.h
+
 #ifndef DISTANCE_SENSOR_H
 #define DISTANCE_SENSOR_H
 #include <avr/io.h>
 #include "div/twi.h"
 
 #define DISTANCE_SENSOR_ADDR 0x57
-
+#define TWI_SPEED 100000
 
 void distance_sensort_init() {
 
