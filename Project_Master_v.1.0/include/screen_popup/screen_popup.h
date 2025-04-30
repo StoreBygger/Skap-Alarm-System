@@ -26,6 +26,8 @@ extern uint8_t max_cursor_y;
 
 extern uint8_t current_running_program;
 
+extern void render();
+
 
 void popup_add_text(const char * text, uint8_t index);
 void popup_delete_string_array();
@@ -112,7 +114,6 @@ void popup_render() {
 }
 
 void popup_stop() {
-	current_running_program = pgm_none;
 	popup_delete_string_array();
 	oled_cmd(0xA6); // non - inverted mode
 	render();

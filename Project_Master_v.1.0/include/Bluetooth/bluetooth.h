@@ -12,6 +12,8 @@
 #include "locker/protocol_status.h"
 #include "bluetooth.c"
 #include "oled/oled.h"
+#include "locker/locker.c"
+#include "screen_popup/screen_popup.h"
 
 
 
@@ -163,7 +165,7 @@ void bluetooth_device_init() {
 
 void bluetooth_err(char * message, char * excpected) {
 
-	if (current_running_program == pgm_sleep) return; // dont show on screen if in sleep mode
+	if (current_running_program == 5) return; // dont show on screen if in sleep mode
 	init_popup(5);
 	popup_add_text("BT ERROR", 0);
 	popup_add_text("In message:",1);
