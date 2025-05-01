@@ -60,6 +60,7 @@ extern uint8_t max_cursor_x;
 extern uint8_t current_cursor_x;
 extern uint8_t max_cursor_y;
 extern uint8_t current_cursor_y;
+extern uint8_t LCN_state;
 
 
 void update_next_check_locker();
@@ -106,6 +107,8 @@ void locker_init() {
 		locker_delete_all(); // delete all lockers
 		eepromWrite(0,0xAA); // make sure first byte is not FF
 	}
+
+	sei();
 
 }
 
@@ -531,7 +534,7 @@ void locker_debug_status() {
 }
 
 void LCN_init() {
-	
+	LCN_state = 1;
 	menu_stop();
 	joystick_adc_start();
 	current_running_program = pgm_LCN;
@@ -576,12 +579,13 @@ void LCN_init() {
 
 	LCN_render();
 
-
+	LCN_state = 2;
 	set_rx_interrupt();
 
 }
 
 uint8_t LCN_check_DISC_recieve(char * data_recieve, uint8_t len) {
+
 	uint8_t LCN_id = LCN_last_id + 1;
 
 	if (LCN_id > MAX_DISC) return 1; // fault -> last id not valid
@@ -624,6 +628,8 @@ uint8_t LCN_check_DISC_recieve(char * data_recieve, uint8_t len) {
 }
 
 void LCN_render() {
+
+	if (LCN_state != 2) return;
 	oled_clear();
 	oled_draw_text("Connect New Device", 1, 0, 2, 0);
 	max_cursor_y = 0;
@@ -686,6 +692,7 @@ uint8_t LCN_check_new_addr(char * addr) {
 
 void LCN_pressed() {
 
+	if (LCN_state != 2) return;
 	oled_clear();
 
 	if (LCN_last_id == 0) {
@@ -762,6 +769,7 @@ void LCN_store_new() {
 }
 
 void LCN_stop() {
+	LCN_state = 0;
 	_delay_ms(1000);
 	LCN_delete_list(LCN_locker_list, MAX_DISC);
 	bluetooth_disconnect();
@@ -779,7 +787,6 @@ void initTimer2() { // set timer2 in normal mode, and trigger interupt on overfl
 	//TCCR2 |= (1<<COM20);
 
 	TIMSK |= (1<<OCIE2);
-	sei();
 }
 
 void timer2_start() {
@@ -821,7 +828,6 @@ void initTimer1() {
 	//TCCR1A |= (1<<COM1A0); // toggle OC1A on compare match
 	TCCR1B |= (1<<WGM12); // ctc mode
 	TIMSK |= (1<<OCIE1A);
-	sei();
 	
 }
 
@@ -842,6 +848,7 @@ void timer1_stop() {
 }
 
 ISR (TIMER1_COMPA_vect) {
+
 	sleep_clear();
 	PORTD ^= (1<<PD5);
 

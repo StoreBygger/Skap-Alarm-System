@@ -281,6 +281,7 @@ ISR (USART_RXC_vect) {
 		
 	}
 
+
 	uint8_t noti = 0;
 	noti = bluetooth_check_notify();
 

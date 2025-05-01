@@ -23,7 +23,6 @@ void init_int0() {
 	GICR |= (1<<INT0);
 	MCUCR |= (1<<ISC00);
 	PORTD |= (1<<PD2);
-	sei();
 	
 }
 
@@ -51,9 +50,6 @@ static void  initADC() {
 	ADCSRA |= (1<<ADIE); // enable ADC interrupt
 	ADCSRA |= (1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0); // set 128 division factor (50KHz < F_CPU / divison_factor < 200KHz) -- works for 8MHz and 16MHz
 	ADCSRA |= (1<<ADEN); // enable ADC
-
-
-	sei();
   }
   
 ISR (TIMER0_OVF_vect) {

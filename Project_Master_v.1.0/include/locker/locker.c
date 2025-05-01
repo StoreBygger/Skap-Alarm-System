@@ -50,6 +50,7 @@ uint8_t current_check_locker_id = 255;
 
 LCN_locker LCN_locker_list[MAX_DISC];
 uint8_t LCN_last_id = 0;
+uint8_t LCN_state = 0;
 
 uint8_t alarm_sound = 1;
 

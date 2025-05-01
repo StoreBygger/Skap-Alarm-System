@@ -475,6 +475,8 @@ void menu_locker_render(menu_item * self, uint8_t x, uint8_t y, uint8_t selected
 
 
 void menu_item_pressed(menu_item * self) {
+
+	sei(); // re-enable global interrupts so other interrupts can happen -> UART interrupt is important
 	switch (self->type) {
 		case menu_pointer_item: // new menu
 			menu_make_menu(current_menu_header, self->state);
