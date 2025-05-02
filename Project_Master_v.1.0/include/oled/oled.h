@@ -63,9 +63,6 @@ void oled_draw_num(int num, uint8_t x, uint8_t y, uint8_t textsize, uint8_t inve
 uint8_t get_letter_bitmap(uint8_t letter, volatile uint8_t * buffer, uint8_t invert);
 
 
-
-
-
 void cursor_add(uint8_t x,uint8_t y) {
 	x += cursor[0];
 	y += cursor[1];

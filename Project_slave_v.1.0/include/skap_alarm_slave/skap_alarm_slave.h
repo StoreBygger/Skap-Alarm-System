@@ -183,8 +183,8 @@ void skap_check_message(uint8_t * message) {
 			send_alarm_status();
 			break;
 
-		case ASK_SKAP_IS_LOCKER:
-			skap_send_message(SEND_SKAP_IS_LOCKER,0);
+		case ASK_DEVICE_IS_LOCKER:
+			skap_send_message(SEND_DEVICE_IS_LOCKER,0);
 			break;
 
 		default:

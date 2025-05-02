@@ -2,6 +2,7 @@
 	"files.associations": {
 		"delay.h": "c",
 		"io.h": "c",
-		"screen_popup.h": "c"
+		"screen_popup.h": "c",
+		"render_manager.h": "c"
 	}
 }
