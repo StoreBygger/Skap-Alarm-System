@@ -58,8 +58,6 @@ extern const uint8_t menu_state_all_headers[MAX_MENUS][MAX_MENU_STATE];
 
 
 
-extern uint8_t current_running_program; // defines the current running program
-
 
 extern void popup_add_text(const char * text, uint8_t index);
 extern void popup_delete_string_array();
@@ -665,15 +663,16 @@ void menu_locker_check_alarm(menu_item * self) {
 }
 
 void menu_start() {
+	timer1_stop();
 	joystick_adc_start();
-	current_running_program = pgm_menu;
+	ren_man_set_program(3, pgm_menu);
 	menu_make_menu(current_menu_header, 1);
 	render();
 }
 
 void menu_stop() {
 	joystick_adc_stop();
-	current_running_program = pgm_none;
+	ren_man_set_program(2); // set to previous program
 	menu_free_menu(current_menu_header);
 	render();
 }

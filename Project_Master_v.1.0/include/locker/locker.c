@@ -29,14 +29,15 @@ typedef struct locker {
 }locker;
 
 
-typedef enum current_running_prog {
+typedef enum current_running_program {
 	pgm_none,
 	pgm_menu,
 	pgm_popup,
 	pgm_eeprom_print,
 	pgm_LCN,
-	pgm_sleep
-} current_running_prog;
+	pgm_sleep,
+	pgm_loading
+} current_running_program;
 
 typedef struct LCN_locker {
 

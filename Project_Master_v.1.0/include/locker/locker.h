@@ -38,6 +38,41 @@ void locker_reset_all_alarms();
 uint8_t findString(const char string[], const char substring[]);
 uint8_t locker_check_alarm_active();
 
+void loading_start(char * text);
+void loading_stop();
+void loading_render();
+
+void update_next_check_locker();
+
+void locker_check_message(uint8_t * message);
+uint8_t locker_check_recieved(uint8_t * recieved, uint8_t rec_len);
+
+void LCN_init();
+uint8_t LCN_check_DISC_recieve(char * data_recieve, uint8_t len);
+void LCN_render();
+void LCN_pressed();
+uint8_t LCN_check_new_addr(char * addr);
+void LCN_store_new();
+
+void LCN_delete_list(LCN_locker * LCN_list, uint8_t len);
+void LCN_delete_item(LCN_locker * LCN_list, uint8_t id); 
+
+void LCN_stop();
+
+
+void initTimer2();
+void timer2_stop();
+void timer2_start();
+void alarm_clear();
+void alarm_set();
+void timer1_stop();
+void timer1_start(uint16_t count);
+void timer1_al_start();
+void initTimer1();
+
+void sleep_set();
+void sleep_clear();
+
 extern void popup_add_text(const char * text, uint8_t index);
 extern void popup_delete_string_array();
 extern void popup_make_string_array(uint8_t len);
@@ -62,38 +97,7 @@ extern uint8_t max_cursor_y;
 extern uint8_t current_cursor_y;
 extern uint8_t LCN_state;
 
-
-void update_next_check_locker();
-
-
-
-void locker_check_message(uint8_t * message);
-uint8_t locker_check_recieved(uint8_t * recieved, uint8_t rec_len);
-
-void LCN_init();
-uint8_t LCN_check_DISC_recieve(char * data_recieve, uint8_t len);
-void LCN_render();
-uint8_t LCN_check_new_addr(char * addr);
-void LCN_store_new();
-
-void LCN_delete_list(LCN_locker * LCN_list, uint8_t len);
-void LCN_delete_item(LCN_locker * LCN_list, uint8_t id); 
-
-void LCN_stop();
-
-
-void initTimer2();
-void timer2_stop();
-void timer2_start();
-void alarm_clear();
-void alarm_set();
-void timer1_stop();
-void timer1_start(uint16_t count);
-void timer1_al_start();
-void initTimer1();
-
-void sleep_set();
-void sleep_clear();
+extern uint8_t ren_man_set_program(uint8_t set_program, ...);
 
 void locker_init() {
 	oled_init();
@@ -102,13 +106,20 @@ void locker_init() {
 	bluetooth_init();
 	initTimer1();
 	initTimer2();
-
+	menu_start();
+	loading_start("BOOTING");
+	render();
+	sei();
 	if (eepromRead(0) == 0xFF) { // all eeprom is FF when ATmega32 loaded -> check if ATmega is not beeing manually reset
 		locker_delete_all(); // delete all lockers
 		eepromWrite(0,0xAA); // make sure first byte is not FF
+		return;
 	}
 
-	sei();
+	_delay_ms(1000);
+	loading_stop();
+
+	
 
 }
 
@@ -412,6 +423,7 @@ void locker_check_alarm(uint8_t locker_id) {
 	uint8_t err = locker_connect(locker_id);
 	if (err != 0) {
 		bluetooth_disconnect();
+		//timer1_al_start();
 		return;
 	}
 
@@ -425,6 +437,7 @@ void locker_check_alarm(uint8_t locker_id) {
 
 
 void locker_check_all_alarms() {
+	//bluetooth_disconnect();
 
 	current_check_locker_id = 0;
 
@@ -537,7 +550,7 @@ void LCN_init() {
 	LCN_state = 1;
 	menu_stop();
 	joystick_adc_start();
-	current_running_program = pgm_LCN;
+	ren_man_set_program(3, pgm_LCN);
 	max_cursor_x = 2;
 
 	current_cursor_x = 1;
@@ -576,10 +589,8 @@ void LCN_init() {
 		
 	} while ((findString(recieve_arr, "DISCE") == 255));
 	
-
-	LCN_render();
-
 	LCN_state = 2;
+	LCN_render();
 	set_rx_interrupt();
 
 }
@@ -694,6 +705,7 @@ void LCN_pressed() {
 
 	if (LCN_state != 2) return;
 	oled_clear();
+	loading_start("CONNECTING");
 
 	if (LCN_last_id == 0) {
 		LCN_stop();
@@ -730,12 +742,11 @@ void LCN_pressed() {
 	}
 
 	set_rx_interrupt();
+	
 }
 
 
 void LCN_store_new() {
-
-	
 
 	if ((bluetooth_state < MAX_LOCKERS) || ((bluetooth_state > (MAX_LOCKERS + 1 + MAX_DISC )))) {
 		LCN_stop();
@@ -770,9 +781,9 @@ void LCN_store_new() {
 
 void LCN_stop() {
 	LCN_state = 0;
-	_delay_ms(1000);
 	LCN_delete_list(LCN_locker_list, MAX_DISC);
 	bluetooth_disconnect();
+	loading_stop();
 	menu_start();
 }
 
@@ -837,7 +848,7 @@ void timer1_start(uint16_t count) {
 }
 
 void timer1_al_start() {
-	if (current_running_program != pgm_sleep) return; // timer1 is NOT supposed to turn on
+	if (ren_man_set_program(0) != pgm_sleep) return; // timer1 is NOT supposed to turn on
 
 	timer1_start(65000);
 	sleep_set();
@@ -852,11 +863,15 @@ ISR (TIMER1_COMPA_vect) {
 	sleep_clear();
 	PORTD ^= (1<<PD5);
 
-	switch (current_running_program) {
+	switch (ren_man_set_program(0)) {
 
 		case pgm_sleep:
 			timer1_stop();
 			locker_check_all_alarms();
+			break;
+
+		case pgm_loading:
+			render();
 			break;
 
 		default:
@@ -866,7 +881,7 @@ ISR (TIMER1_COMPA_vect) {
 
 void alarm_set() {
 
-	if (current_running_program == pgm_sleep) {
+	if (ren_man_set_program(0) == pgm_sleep) {
 		alarm_sound = 1;
 	} else {
 		alarm_sound = 0;
@@ -887,7 +902,7 @@ void sleep_start() {
 	LCN_stop();
 	eeprom_print_stop();
 	joystick_adc_stop();
-	current_running_program = pgm_sleep;
+	ren_man_set_program(3, pgm_sleep);
 	
 	initTimer1(); // make sure timers is correctly initialized
 	initTimer2();
@@ -914,10 +929,36 @@ void sleep_clear() {
 
 void sleep_set() {
 
-	if (current_running_program != pgm_sleep) return; // dont set sleep if not in sleep pgm
+	if (ren_man_set_program(0) != pgm_sleep) return; // dont set sleep if not in sleep pgm
 
 	MCUCR |= (1<<SM0) | (1<<SM1);
 	MCUCR |= (1<<SE);
+}
+
+
+
+void loading_start(char * text) {
+	ren_man_set_program(3, pgm_loading);
+	timer1_start(1000);
+	oled_clear();
+	uint8_t size = strlen(text);
+	oled_draw_text(text,64 - (size * 2), 0,2,1);
+	render();
+}\
+void loading_stop() {
+	timer1_stop();
+	ren_man_set_program(2);
+	render();
+}
+
+void loading_render() {
+	static uint8_t state = 0;
+
+	oled_clear_area(0,4,128,2);
+	oled_draw_loading(25,4,state, 3);
+
+	state++;
+	if (state > 4) state = 0;
 }
 
 

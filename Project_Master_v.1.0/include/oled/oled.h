@@ -242,7 +242,7 @@ uint8_t get_letter_bitmap(uint8_t letter, volatile uint8_t * buffer, uint8_t inv
 
 		default:
 			for (uint8_t k = 0; k<26;k++) {
-				uint8_t c = specialVal[k];
+				uint8_t c = pgm_read_byte(&specialVal + k);
 				if (letter == c) {
 					j = k;
 					bmp = 3;
@@ -466,14 +466,14 @@ void oled_clear_area(uint8_t x, uint8_t page_start, uint8_t width, uint8_t page_
 	
 }
 
-void oled_draw_loading(uint8_t x, uint8_t y, uint8_t state) {
+void oled_draw_loading(uint8_t x, uint8_t y, uint8_t state, uint8_t max_state) {
 	
 
 
 	uint8_t bitmap[10] = {0};
 	memset(bitmap, 0xFF,10);
 
-	uint8_t mx = x + state * 15;
+	uint8_t mx = x + max_state * 15;
 
 	for (uint8_t i = 0; i < state; i++) {
 		oled_draw_bitmap(bitmap,x+i*15, y,10,1);

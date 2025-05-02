@@ -25,8 +25,12 @@ void render();
 // joystick functions
 void joy_btn_pressed();
 
+uint8_t ren_man_set_program(uint8_t set_program, ...);
+
+void ren_man_stop_current_program();
+
 void render() {
-	switch (current_running_program) {
+	switch (ren_man_set_program(0)) {
 		case pgm_none:
 			oled_clear();
 			break;
@@ -47,6 +51,10 @@ void render() {
 			LCN_render();
 			break;
 
+		case pgm_loading:
+			loading_render();
+			break;
+
 		default:
 			break;
 	}
@@ -54,7 +62,7 @@ void render() {
 
 
 void joy_btn_pressed() {
-	switch (current_running_program) {
+	switch (ren_man_set_program(0)) {
 
 		case pgm_none:
 			break;
@@ -89,6 +97,47 @@ void joy_btn_pressed() {
 
 }
 
+uint8_t ren_man_set_program(uint8_t set_program, ...) { /* 
+	set_program == 0; return current program, 
+	set_program == 1; return previous program, 
+	set_program == 2; set current_program to previous program
+	set_program == 3; set current_program to parameter after set_program
+	set_program == 4; set previous program to given program
+	*/
+	static uint8_t previous_program = pgm_none, current_program = pgm_none;
+	if (set_program == 0) return current_program;
+	if (set_program == 1) return previous_program;
+	if (set_program == 2) {
+		if (current_program == previous_program) {
+			return current_program;
+		}
+		uint8_t temp = current_program;
+		current_program = previous_program;
+		previous_program = temp;
+		return current_program;
+	}
+	
+
+	uint8_t program = pgm_none;
+	va_list args;
+	va_start(args, set_program);
+	program = va_arg(args, int);
+	va_end(args);
+	if (set_program == 3) {
+
+		if ( previous_program != current_program) {
+
+			previous_program = current_program;
+		}
+		current_program = program;
+	} else if (set_program == 4) {
+		previous_program = program;
+	}
+
+
+	return previous_program;
+}
+
 void update_cursor(int8_t x, int8_t y, uint8_t btn) {
 
 	if ((y == -1) && (current_cursor_y > 1)) { // up
@@ -114,10 +163,6 @@ void update_cursor(int8_t x, int8_t y, uint8_t btn) {
 	}
 	
 }
-
-
-
-
 
 void eeprom_print_arr() {
 
@@ -151,7 +196,7 @@ void eeprom_print_arr() {
 }
 
 void eeprom_print_start() {
-	current_running_program = pgm_eeprom_print;
+	ren_man_set_program(3, pgm_eeprom_print);
 	current_cursor_y = 1;
 	current_cursor_x = 0;
 	max_cursor_y = 64;

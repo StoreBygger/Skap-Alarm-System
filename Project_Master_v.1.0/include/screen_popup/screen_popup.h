@@ -24,7 +24,8 @@ extern uint8_t current_cursor_y;
 extern uint8_t max_cursor_x;
 extern uint8_t max_cursor_y;
 
-extern uint8_t current_running_program;
+
+extern uint8_t ren_man_set_program(uint8_t set_program, ...);
 
 extern void render();
 
@@ -41,7 +42,8 @@ void init_popup(uint8_t popup_lines) {
 	max_cursor_y = 0;
 
 	popup_make_string_array(popup_lines);
-	current_running_program = 2;
+	ren_man_set_program(3, pgm_popup);
+	render();
 
 }
 
@@ -114,6 +116,8 @@ void popup_render() {
 }
 
 void popup_stop() {
+	oled_cmd(0xA6); // non - inverted mode
+	ren_man_set_program(2); // set tp previous program
 	popup_delete_string_array();
 	oled_cmd(0xA6); // non - inverted mode
 	render();
