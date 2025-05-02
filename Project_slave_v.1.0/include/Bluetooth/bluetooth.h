@@ -204,12 +204,6 @@ uint8_t string_compare(char * string_1, char * string_2, uint8_t len) {
 }
 
 
-void bluetooth_rec() {
-
-
-}
-
-
 ISR (USART_RXC_vect) {
 	uint8_t data = UDR; // read data
 	recieve_buffer[len_recieve_buffer] = data; // put data in recieve buffer
@@ -227,7 +221,6 @@ ISR (USART_RXC_vect) {
 ISR (TIMER1_COMPA_vect) {
 	timer1_stop(); // stop countdown timer
 	
-	bluetooth_rec();
 	uint8_t noti = 0;
 	noti = bluetooth_check_notify();
 
