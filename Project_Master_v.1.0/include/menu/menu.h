@@ -388,8 +388,6 @@ void menu_render() {
 
 		
 	}
-	oled_draw_num(menu_len,64,7,0,0);
-	oled_draw_num(max_cursor_y,64,6,0,0);
 	max_cursor_y++;
 	max_scroll_page = max_cursor_y / (MAX_MENU_ITEMS + 1);
 
